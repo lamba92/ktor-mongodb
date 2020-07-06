@@ -16,9 +16,11 @@ import kotlin.test.assertEquals
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class Tests {
 
-    val testData = TestData("2oeufgnow3erugn", "wsjkrgbk")
+    private val testData = TestData("2oeufgnow3erugn", "wsjkrgbk")
 
-    val db = KMongo.createClient("mongodb://192.168.1.158:27017")
+    private val dbUrl: String? by System.getenv()
+
+    private val db = KMongo.createClient(dbUrl ?: "mongodb://192.168.1.158:27017")
         .getDatabase("test")
         .coroutine
 
