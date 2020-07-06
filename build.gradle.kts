@@ -1,6 +1,7 @@
-@file:Suppress("SuspiciousCollectionReassignment")
+@file:Suppress("SuspiciousCollectionReassignment", "COMPATIBILITY_WARNING", "UNUSED_VARIABLE")
 
 import com.github.lamba92.gradle.utils.TRAVIS_TAG
+import com.github.lamba92.gradle.utils.implementation
 import com.github.lamba92.gradle.utils.ktor
 import com.github.lamba92.gradle.utils.prepareForPublication
 
@@ -16,7 +17,7 @@ buildscript {
 }
 
 plugins {
-    kotlin("jvm") version "1.3.72"
+    kotlin("multiplatform") version "1.3.72"
     kotlin("plugin.serialization") version "1.3.72"
     `maven-publish`
     id("com.jfrog.bintray") version "1.8.5"
@@ -31,31 +32,43 @@ repositories {
     maven("https://kotlin.bintray.com/ktor")
 }
 
-kotlin.target.compilations.all {
-    kotlinOptions {
-        jvmTarget = "1.8"
-        freeCompilerArgs += "-Xopt-in=kotlin.RequiresOptIn"
+kotlin {
+    jvm {
+        compilations.all {
+            kotlinOptions {
+                jvmTarget = "1.8"
+                freeCompilerArgs += "-Xopt-in=kotlin.RequiresOptIn"
+            }
+        }
+    }
+
+    sourceSets {
+
+        val ktorVersion: String by project
+
+        val jvmMain by getting {
+            dependencies {
+
+                implementation(kotlin("stdlib-jdk8"))
+
+                implementation(ktor("server-core", ktorVersion))
+                implementation(ktor("auth", ktorVersion))
+                implementation("org.litote.kmongo", "kmongo-coroutine", "4.0.2")
+            }
+        }
+        val jvmTest by getting {
+            dependencies {
+                implementation(ktor("server-tests", ktorVersion))
+                implementation(ktor("serialization", ktorVersion))
+                implementation(kotlin("test-junit5"))
+                implementation("org.junit.jupiter", "junit-jupiter-engine", "5.5.2")
+            }
+        }
     }
 }
 
-dependencies {
-
-    val ktorVersion: String by project
-
-    implementation(kotlin("stdlib-jdk8"))
-
-    implementation(ktor("server-core", ktorVersion))
-    implementation(ktor("auth", ktorVersion))
-    implementation("org.litote.kmongo", "kmongo-coroutine", "4.0.2")
-
-    testImplementation(ktor("server-tests", ktorVersion))
-    testImplementation(ktor("serialization", ktorVersion))
-    testImplementation(kotlin("test-junit5"))
-    testImplementation("org.junit.jupiter", "junit-jupiter-engine", "5.5.2")
-
-}
 tasks {
-    test {
+    withType<Test> {
         useJUnitPlatform()
     }
 }

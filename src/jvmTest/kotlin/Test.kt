@@ -18,7 +18,7 @@ class Tests {
 
     private val testData = TestData("2oeufgnow3erugn", "wsjkrgbk")
 
-    private val dbUrl: String? by System.getenv()
+    private val dbUrl: String? by System.getenv().withDefault { null }
 
     private val db = KMongo.createClient(dbUrl ?: "mongodb://192.168.1.158:27017")
         .getDatabase("test")

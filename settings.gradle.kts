@@ -1,5 +1,3 @@
-rootProject.name = "ktor-mongodb"
-
 plugins {
     `gradle-enterprise`
 }
@@ -11,3 +9,5 @@ gradleEnterprise {
         publishAlwaysIf(System.getenv("CI")?.toBoolean() == true)
     }
 }
+
+rootProject.name = "ktor-mongodb"
