@@ -39,8 +39,8 @@ class MongoDBRepositories private constructor(val configuration: Configuration) 
     @MongoDBRepositoriesDSL
     class Configuration(val logger: Logger) {
 
-        @InternalAPI
-        val entitiesConfigurationMap: MutableMap<Pair<String, HttpMethod>, Route.() -> Unit> = mutableMapOf()
+        @PublishedApi
+        internal val entitiesConfigurationMap: MutableMap<Pair<String, HttpMethod>, Route.() -> Unit> = mutableMapOf()
 
         @OptIn(InternalAPI::class)
         internal val builtRoutes
@@ -97,8 +97,8 @@ class MongoDBRepositories private constructor(val configuration: Configuration) 
             var collectionPath: String
         ) {
 
-            @InternalAPI
-            val configuredMethods = mutableMapOf<HttpMethod, Behaviour<T>>()
+            @PublishedApi
+            internal val configuredMethods = mutableMapOf<HttpMethod, Behaviour<T>>()
 
             @OptIn(InternalAPI::class)
             fun addEndpoint(httpMethod: HttpMethod, behaviourConfiguration: Behaviour<T>.() -> Unit = {}) {

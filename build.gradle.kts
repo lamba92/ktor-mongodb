@@ -53,7 +53,7 @@ kotlin {
 
                 implementation(ktor("server-core", ktorVersion))
                 implementation(ktor("auth", ktorVersion))
-                implementation("org.litote.kmongo", "kmongo-coroutine", "4.0.2")
+                implementation("org.litote.kmongo", "kmongo-coroutine-serialization", "4.0.2")
             }
         }
         val jvmTest by getting {

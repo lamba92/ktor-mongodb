@@ -1,28 +1,46 @@
+import com.githuib.lamba92.ktor.features.MongoDBRepositories
+import io.ktor.application.*
+import io.ktor.features.*
 import io.ktor.http.*
 import io.ktor.http.HttpMethod.Companion.Delete
 import io.ktor.http.HttpMethod.Companion.Get
+import io.ktor.http.HttpMethod.Companion.Post
 import io.ktor.http.HttpMethod.Companion.Put
+import io.ktor.routing.*
+import io.ktor.serialization.*
 import io.ktor.server.testing.*
 import kotlinx.coroutines.runBlocking
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonConfiguration
 import org.junit.jupiter.api.*
-import org.litote.kmongo.coroutine.coroutine
-import org.litote.kmongo.reactivestreams.KMongo
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation::class)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class Tests {
+class Tests : AbstractTest() {
 
-    private val testData = TestData("2oeufgnow3erugn", "wsjkrgbk")
+    override fun <R> withTestApp(tests: TestApplicationEngine.() -> R) = withTestApplication({
 
-    private val dbUrl: String? by System.getenv().withDefault { null }
+        install(ContentNegotiation) {
+            json()
+        }
 
-    private val db = KMongo.createClient(dbUrl ?: "mongodb://192.168.1.158:27017")
-        .getDatabase("test")
-        .coroutine
+        install(MongoDBRepositories) {
+
+            repositoryPath = "data"
+
+            collection<TestData>(db, "testdata") {
+                collectionPath = "testdatalol"
+                addEndpoints(Get, Post, Put, Delete)
+            }
+        }
+
+        routing {
+            trace {
+                application.log.debug(it.buildText())
+            }
+        }
+
+    }, tests)
 
     @BeforeAll
     fun clearDB(): Unit = runBlocking {
@@ -30,13 +48,10 @@ class Tests {
         return@runBlocking
     }
 
-    private fun withTestApp(tests: TestApplicationEngine.() -> Unit) =
-        testApp(db, tests)
-
     @Test
     @Order(1)
     fun `test put`(): Unit = withTestApp {
-        handleRequest(Put, "data/testdatalol/single", testData.toString()) {
+        handleRequest(Put, "data/testdatalol/single", testData.first().toString()) {
             assertEquals(HttpStatusCode.OK, response.status())
         }
     }
@@ -44,21 +59,19 @@ class Tests {
     @Test
     @Order(2)
     fun `test get`(): Unit = withTestApp {
-        handleRequest(Get, "data/testdatalol/${testData._id}").apply {
+        handleRequest(Get, "data/testdatalol/${testData.first()._id}").apply {
             assertEquals(HttpStatusCode.OK, response.status())
-            assertEquals(response.content?.asTestData(), testData)
+            assertEquals(response.content?.asTestData(), testData.first())
         }
     }
 
     @Test
     @Order(3)
     fun `test delete`(): Unit = withTestApp {
-        handleRequest(Delete, "data/testdatalol/${testData._id}").apply {
+        handleRequest(Delete, "data/testdatalol/${testData.first()._id}").apply {
             assertEquals(HttpStatusCode.OK, response.status())
         }
     }
 
 }
 
-private fun String.asTestData() =
-    Json(JsonConfiguration.Stable).parse(TestData.serializer(), this)

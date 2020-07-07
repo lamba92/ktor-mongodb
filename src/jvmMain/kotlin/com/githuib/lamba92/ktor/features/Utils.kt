@@ -112,12 +112,12 @@ inline fun <reified T : Any> httpPutDefaultMultipleItemBehaviour(
     collectionName: String,
     crossinline customAction: PipelineContext<Unit, ApplicationCall>.(T) -> T?
 ): suspend PipelineContext<Unit, ApplicationCall>.(Unit) -> Unit = {
-    database.getCollection<T>(collectionName).let { collection ->
+    val docs = database.getCollection<T>(collectionName).let { collection ->
         call.receive<List<T>>()
             .mapNotNull { customAction(it) }
-            .let { collection.insertMany(it) }
+            .also { collection.insertMany(it) }
     }
-    call.respond(HttpStatusCode.OK)
+    call.respond(docs)
 }
 
 inline fun <reified T : Any> httpPostDefaultMultipleItemBehaviour(
@@ -173,12 +173,7 @@ inline fun <reified T : Any> httpPostDefaultSingleItemBehaviour(
     database: CoroutineDatabase,
     collectionName: String,
     crossinline customAction: PipelineContext<Unit, ApplicationCall>.(T) -> T?
-): suspend PipelineContext<Unit, ApplicationCall>.(Unit) -> Unit = {
-    customAction(call.receive())?.let {
-        database.getCollection<T>(collectionName)
-            .updateOneById(call.documentId, it)
-    } ?: call.respond(HttpStatusCode.OK)
-}
+) = httpPutDefaultSingleItemBehaviour(database, collectionName, customAction)
 
 
 inline fun <reified T : Any> httpGetDefaultSingleItemBehaviour(

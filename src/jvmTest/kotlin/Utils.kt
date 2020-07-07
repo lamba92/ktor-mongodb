@@ -1,40 +1,13 @@
-import com.githuib.lamba92.ktor.features.MongoDBRepositories
-import io.ktor.application.*
-import io.ktor.features.*
 import io.ktor.http.*
-import io.ktor.routing.*
-import io.ktor.serialization.*
 import io.ktor.server.testing.*
-import org.litote.kmongo.coroutine.CoroutineDatabase
-
-fun <R> testApp(db: CoroutineDatabase, tests: TestApplicationEngine.() -> R) = withTestApplication({
-
-    install(ContentNegotiation) {
-        json()
-    }
-
-    install(MongoDBRepositories) {
-
-        repositoryPath = "data"
-
-        collection<TestData>(db) {
-            collectionPath = "testdatalol"
-            addEndpoints(HttpMethod.Get, HttpMethod.Post, HttpMethod.Put, HttpMethod.Delete) {
-                isAuthenticated = false
-            }
-        }
-    }
-
-    routing {
-        trace {
-            application.log.debug(it.buildText())
-        }
-    }
-
-}, tests)
+import kotlinx.serialization.builtins.ListSerializer
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonConfiguration
 
 fun TestApplicationRequest.setContentType(contentType: ContentType) =
     addHeader("Content-Type", contentType.toString())
+
+val serializer by lazy { Json(JsonConfiguration.Stable) }
 
 fun TestApplicationEngine.handleRequest(
     method: HttpMethod,
@@ -45,3 +18,9 @@ fun TestApplicationEngine.handleRequest(
     setContentType(ContentType.Application.Json)
     setBody(body)
 }.apply(action)
+
+fun String.asTestData() =
+    serializer.parse(TestData.serializer(), this)
+
+fun String.asTestDataList() =
+    serializer.parse(ListSerializer(TestData.serializer()), this)
