@@ -44,7 +44,7 @@ inline fun <reified T : Any> getRouteActions(
     crossinline customAction: RestRepositoryInterceptor<T>
 ): InterceptorsContainer {
     val single: suspend (PipelineContext<Unit, ApplicationCall>, Unit) -> Unit = {
-        getRouteActions<T>(
+        getRouteActions(
             SINGLE,
             httpMethod,
             database,
@@ -53,7 +53,7 @@ inline fun <reified T : Any> getRouteActions(
         )
     }()
     val multiple: suspend (PipelineContext<Unit, ApplicationCall>, Unit) -> Unit = {
-        getRouteActions<T>(
+        getRouteActions(
             MULTIPLE,
             httpMethod,
             database,
@@ -162,9 +162,13 @@ inline fun <reified T : Any> httpPutDefaultSingleItemBehaviour(
     crossinline customAction: PipelineContext<Unit, ApplicationCall>.(T) -> T?
 ): suspend PipelineContext<Unit, ApplicationCall>.(Unit) -> Unit = {
     customAction(call.receive())?.let {
-        database.getCollection<T>(collectionName)
-            .insertOne(it)
-        call.respond(HttpStatusCode.OK)
+        val c = database.getCollection<T>(collectionName)
+        if (c.findOneById(call.documentId) == null) {
+            database.getCollection<T>(collectionName)
+                .insertOne(it)
+            call.respond(HttpStatusCode.OK)
+        } else
+            null
     } ?: call.respond(HttpStatusCode.Forbidden)
 
 }
@@ -173,7 +177,16 @@ inline fun <reified T : Any> httpPostDefaultSingleItemBehaviour(
     database: CoroutineDatabase,
     collectionName: String,
     crossinline customAction: PipelineContext<Unit, ApplicationCall>.(T) -> T?
-) = httpPutDefaultSingleItemBehaviour(database, collectionName, customAction)
+): suspend PipelineContext<Unit, ApplicationCall>.(Unit) -> Unit = {
+    customAction(call.receive())?.also {
+        val c = database.getCollection<T>(collectionName)
+        if (c.findOneById(call.documentId) == null)
+            c.insertOne(it)
+        else
+            c.updateOneById(call.documentId, it)
+        call.respond(it)
+    } ?: call.respond(HttpStatusCode.Forbidden)
+}
 
 
 inline fun <reified T : Any> httpGetDefaultSingleItemBehaviour(
