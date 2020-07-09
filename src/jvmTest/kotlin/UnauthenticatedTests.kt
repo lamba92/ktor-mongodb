@@ -16,7 +16,7 @@ import kotlin.test.assertEquals
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation::class)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class Tests : AbstractTest() {
+class UnauthenticatedTests : AbstractTest() {
 
     override fun <R> withTestApp(tests: TestApplicationEngine.() -> R) = withTestApplication({
 
@@ -50,7 +50,7 @@ class Tests : AbstractTest() {
 
     @Test
     @Order(1)
-    fun `test put`(): Unit = withTestApp {
+    fun `test put single`(): Unit = withTestApp {
         handleRequest(Put, "data/testdatalol/single", testData.first().toString()) {
             assertEquals(HttpStatusCode.OK, response.status())
         }
@@ -58,7 +58,7 @@ class Tests : AbstractTest() {
 
     @Test
     @Order(2)
-    fun `test get`(): Unit = withTestApp {
+    fun `test get single`(): Unit = withTestApp {
         handleRequest(Get, "data/testdatalol/${testData.first()._id}").apply {
             assertEquals(HttpStatusCode.OK, response.status())
             assertEquals(response.content?.asTestData(), testData.first())
@@ -67,8 +67,33 @@ class Tests : AbstractTest() {
 
     @Test
     @Order(3)
-    fun `test delete`(): Unit = withTestApp {
+    fun `test delete single`(): Unit = withTestApp {
         handleRequest(Delete, "data/testdatalol/${testData.first()._id}").apply {
+            assertEquals(HttpStatusCode.OK, response.status())
+        }
+    }
+
+    @Test
+    @Order(4)
+    fun `test put multiple`(): Unit = withTestApp {
+        handleRequest(Put, "data/testdatalol", testData.toJson()) {
+            assertEquals(HttpStatusCode.OK, response.status())
+        }
+    }
+
+    @Test
+    @Order(5)
+    fun `test get multiple`(): Unit = withTestApp {
+        handleRequest(Get, "data/testdatalol", testData.asIdsJson()) {
+            assertEquals(HttpStatusCode.OK, response.status())
+            assertEquals(response.content?.asTestDataList()?.sortedBy { it._id }, testData.sortedBy { it._id })
+        }
+    }
+
+    @Test
+    @Order(6)
+    fun `test delete multiple`(): Unit = withTestApp {
+        handleRequest(Delete, "data/testdatalol", testData.asIdsJson()) {
             assertEquals(HttpStatusCode.OK, response.status())
         }
     }

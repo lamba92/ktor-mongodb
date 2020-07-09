@@ -2,6 +2,7 @@ package com.githuib.lamba92.ktor.features
 
 import com.githuib.lamba92.ktor.features.EndpointMultiplicity.MULTIPLE
 import com.githuib.lamba92.ktor.features.EndpointMultiplicity.SINGLE
+import com.githuib.lamba92.ktor.features.MongoDBRepositories.Configuration.CollectionSetup.Behaviour
 import io.ktor.application.*
 import io.ktor.http.*
 import io.ktor.http.HttpMethod.Companion.Delete
@@ -10,13 +11,13 @@ import io.ktor.http.HttpMethod.Companion.Post
 import io.ktor.http.HttpMethod.Companion.Put
 import io.ktor.request.*
 import io.ktor.response.*
-import io.ktor.util.*
 import io.ktor.util.pipeline.*
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.toList
 import org.litote.kmongo.coroutine.CoroutineDatabase
+import kotlin.collections.set
 
 @DslMarker
 annotation class MongoDBRepositoriesDSL
@@ -35,13 +36,12 @@ val ApplicationCall.documentId
 suspend fun ApplicationCall.receiveEntityIds() =
     receive<List<String>>()
 
-
-@InternalAPI
-inline fun <reified T : Any> getRouteActions(
+@PublishedApi
+internal inline fun <reified T : Any> getRouteActions(
     httpMethod: HttpMethod,
     collectionName: String,
     database: CoroutineDatabase,
-    crossinline customAction: RestRepositoryInterceptor<T>
+    crossinline customAction: DataInterceptor<T>
 ): InterceptorsContainer {
     val single: suspend (PipelineContext<Unit, ApplicationCall>, Unit) -> Unit = {
         getRouteActions(
@@ -67,13 +67,13 @@ inline fun <reified T : Any> getRouteActions(
     )
 }
 
-@InternalAPI
-inline fun <reified T : Any> getRouteActions(
+@PublishedApi
+internal inline fun <reified T : Any> getRouteActions(
     endpointMultiplicity: EndpointMultiplicity,
     httpMethod: HttpMethod,
     database: CoroutineDatabase,
     collectionName: String,
-    crossinline customAction: RestRepositoryInterceptor<T>
+    crossinline customAction: DataInterceptor<T>
 ): PipelineInterceptor<Unit, ApplicationCall> = when (endpointMultiplicity) {
     SINGLE -> when (httpMethod) {
         Get -> httpGetDefaultSingleItemBehaviour<T>(database, collectionName, customAction)
@@ -91,7 +91,9 @@ inline fun <reified T : Any> getRouteActions(
     }
 }
 
-inline fun <reified T : Any> httpDeleteDefaultMultipleItemBehaviour(
+@PublishedApi
+internal inline fun
+        <reified T : Any> httpDeleteDefaultMultipleItemBehaviour(
     database: CoroutineDatabase,
     collectionName: String,
     crossinline customAction: PipelineContext<Unit, ApplicationCall>.(T) -> T?
@@ -107,7 +109,8 @@ inline fun <reified T : Any> httpDeleteDefaultMultipleItemBehaviour(
     call.respond(HttpStatusCode.OK)
 }
 
-inline fun <reified T : Any> httpPutDefaultMultipleItemBehaviour(
+@PublishedApi
+internal inline fun <reified T : Any> httpPutDefaultMultipleItemBehaviour(
     database: CoroutineDatabase,
     collectionName: String,
     crossinline customAction: PipelineContext<Unit, ApplicationCall>.(T) -> T?
@@ -120,13 +123,15 @@ inline fun <reified T : Any> httpPutDefaultMultipleItemBehaviour(
     call.respond(docs)
 }
 
-inline fun <reified T : Any> httpPostDefaultMultipleItemBehaviour(
+@PublishedApi
+internal inline fun <reified T : Any> httpPostDefaultMultipleItemBehaviour(
     database: CoroutineDatabase,
     collectionName: String,
     crossinline customAction: PipelineContext<Unit, ApplicationCall>.(T) -> T?
 ) = httpPutDefaultMultipleItemBehaviour(database, collectionName, customAction)
 
-inline fun <reified T : Any> httpGetDefaultMultipleItemBehaviour(
+@PublishedApi
+internal inline fun <reified T : Any> httpGetDefaultMultipleItemBehaviour(
     database: CoroutineDatabase,
     collectionName: String,
     crossinline customAction: PipelineContext<Unit, ApplicationCall>.(T) -> T?
@@ -142,21 +147,23 @@ inline fun <reified T : Any> httpGetDefaultMultipleItemBehaviour(
     call.respond(docs)
 }
 
-inline fun <reified T : Any> httpDeleteDefaultSingleItemBehaviour(
+@PublishedApi
+internal inline fun <reified T : Any> httpDeleteDefaultSingleItemBehaviour(
     database: CoroutineDatabase,
     collectionName: String,
     crossinline customAction: PipelineContext<Unit, ApplicationCall>.(T) -> T?
 ): suspend PipelineContext<Unit, ApplicationCall>.(Unit) -> Unit = {
-    database.getCollection<T>(collectionName).let { collection ->
-        collection.findOneById(call.documentId)
-            ?.let { customAction(it) }
-            ?.let { collection.deleteOneById(call.documentId) }
-            ?: call.respond(HttpStatusCode.Forbidden)
-        call.respond(HttpStatusCode.OK)
-    }
+    val collection = database.getCollection<T>(collectionName)
+    val doc = collection.findOneById(call.documentId)?.let { customAction(it) }
+    if (doc != null) {
+        collection.deleteOneById(call.documentId)
+        call.respond(doc)
+    } else
+        call.respond(HttpStatusCode.Forbidden)
 }
 
-inline fun <reified T : Any> httpPutDefaultSingleItemBehaviour(
+@PublishedApi
+internal inline fun <reified T : Any> httpPutDefaultSingleItemBehaviour(
     database: CoroutineDatabase,
     collectionName: String,
     crossinline customAction: PipelineContext<Unit, ApplicationCall>.(T) -> T?
@@ -173,7 +180,8 @@ inline fun <reified T : Any> httpPutDefaultSingleItemBehaviour(
 
 }
 
-inline fun <reified T : Any> httpPostDefaultSingleItemBehaviour(
+@PublishedApi
+internal inline fun <reified T : Any> httpPostDefaultSingleItemBehaviour(
     database: CoroutineDatabase,
     collectionName: String,
     crossinline customAction: PipelineContext<Unit, ApplicationCall>.(T) -> T?
@@ -189,7 +197,8 @@ inline fun <reified T : Any> httpPostDefaultSingleItemBehaviour(
 }
 
 
-inline fun <reified T : Any> httpGetDefaultSingleItemBehaviour(
+@PublishedApi
+internal inline fun <reified T : Any> httpGetDefaultSingleItemBehaviour(
     database: CoroutineDatabase,
     collectionName: String,
     crossinline customAction: PipelineContext<Unit, ApplicationCall>.(T) -> T?
@@ -202,11 +211,16 @@ inline fun <reified T : Any> httpGetDefaultSingleItemBehaviour(
 }
 
 
-operator fun <K1, K2, V> Map<Pair<K1, K2>, V>.get(key1: K1, key2: K2) =
+internal operator fun <K1, K2, V> Map<Pair<K1, K2>, V>.get(key1: K1, key2: K2) =
     get(key1 to key2)
 
-operator fun <K1, K2, V> MutableMap<Pair<K1, K2>, V>.set(key1: K1, key2: K2, value: V) {
+@PublishedApi
+internal operator fun <K1, K2, V> MutableMap<Pair<K1, K2>, V>.set(key1: K1, key2: K2, value: V) {
     this[key1 to key2] = value
 }
 
-typealias RestRepositoryInterceptor<K> = PipelineContext<Unit, ApplicationCall>.(K) -> K?
+typealias DataInterceptor<K> = PipelineContext<Unit, ApplicationCall>.(K) -> K?
+
+fun <T : Any> Behaviour<T>.dataInterceptor(action: DataInterceptor<T>) {
+    dataInterceptor = action
+}

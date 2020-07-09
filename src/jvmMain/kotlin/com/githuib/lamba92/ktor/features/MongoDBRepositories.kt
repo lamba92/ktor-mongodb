@@ -15,7 +15,7 @@ class MongoDBRepositories private constructor(val configuration: Configuration) 
 
     companion object Feature : ApplicationFeature<Application, Configuration, MongoDBRepositories> {
 
-        const val collectionIdTag = "collectionIdTag"
+        internal const val collectionIdTag = "collectionIdTag"
 
         override val key = AttributeKey<MongoDBRepositories>("MongoDBRepositories")
 
@@ -23,7 +23,6 @@ class MongoDBRepositories private constructor(val configuration: Configuration) 
             val conf = Configuration(pipeline.log).apply(configure)
             assert(conf.repositoryPath.withoutWhitespaces.isNotBlank()) { "Repository path cannot be blank or empty" }
             val feature = MongoDBRepositories(conf)
-
 
             pipeline.routing {
                 conf.builtRoutes.forEach {
@@ -42,7 +41,6 @@ class MongoDBRepositories private constructor(val configuration: Configuration) 
         @PublishedApi
         internal val entitiesConfigurationMap: MutableMap<Pair<String, HttpMethod>, Route.() -> Unit> = mutableMapOf()
 
-        @OptIn(InternalAPI::class)
         internal val builtRoutes
             get() = entitiesConfigurationMap.values.toList()
 
@@ -52,7 +50,6 @@ class MongoDBRepositories private constructor(val configuration: Configuration) 
                 field = value
             }
 
-        @OptIn(InternalAPI::class)
         inline fun <reified T : Any> collection(
             database: CoroutineDatabase,
             collectionName: String = T::class.simpleName!!.toLowerCase(),
@@ -76,7 +73,7 @@ class MongoDBRepositories private constructor(val configuration: Configuration) 
                                 httpMethod,
                                 collectionName,
                                 database,
-                                behaviour.mongoDBRepositoryInterceptor
+                                behaviour.dataInterceptor
                             ).toRoute(
                                 collectionPath.withoutWhitespaces,
                                 httpMethod,
@@ -112,7 +109,7 @@ class MongoDBRepositories private constructor(val configuration: Configuration) 
             data class Behaviour<T : Any>(
                 var isAuthenticated: Boolean = false,
                 var authNames: List<String?> = mutableListOf(null),
-                var mongoDBRepositoryInterceptor: RestRepositoryInterceptor<T> = { it }
+                var dataInterceptor: DataInterceptor<T> = { it }
             )
 
         }

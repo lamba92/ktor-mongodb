@@ -26,21 +26,17 @@ data class InterceptorsContainer(
     }
 
     private fun buildRoutes(collectionPath: String, httpMethod: HttpMethod): Route.() -> Unit = {
-        when (httpMethod) {
-            Get, Delete -> route("$collectionPath/{${MongoDBRepositories.collectionIdTag}}") {
-                method(httpMethod) {
-                    handle(single)
-                }
-            }
-            Post, Put -> route("$collectionPath/single") {
-                method(httpMethod) {
-                    contentType(ContentType.Application.Json) {
-                        handle(single)
+        route(collectionPath) {
+            route("{${MongoDBRepositories.collectionIdTag}}") {
+                when (httpMethod) {
+                    Get, Delete -> method(httpMethod) { handle(single) }
+                    Post, Put -> method(httpMethod) {
+                        contentType(ContentType.Application.Json) {
+                            handle(single)
+                        }
                     }
                 }
             }
-        }
-        route(collectionPath) {
             method(httpMethod) {
                 contentType(ContentType.Application.Json) {
                     handle(multiple)
