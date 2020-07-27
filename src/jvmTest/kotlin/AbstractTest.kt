@@ -5,13 +5,15 @@ import kotlin.random.Random
 
 abstract class AbstractTest {
 
-    private val dbUrl: String by System.getenv().withDefault { "mongodb://192.168.1.158:27017" }
+    private val dbUrl: String by System.getenv().withDefault { "mongodb://192.168.1.158:27018" }
 
     protected val db = KMongo.createClient(dbUrl)
         .getDatabase("test")
         .coroutine
 
-    protected val testData = (0..10).map { TestData(Random.nextInt().toString(), Random.nextInt().toString()) }
+    protected val testData = (0..10).map {
+        TestData(Random.nextInt().toString(), Random.nextInt().toString(), TestEnum.values().random())
+    }
 
     protected abstract fun <R> withTestApp(tests: TestApplicationEngine.() -> R): R
 
