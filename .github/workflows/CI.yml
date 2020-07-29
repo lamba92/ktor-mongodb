@@ -19,7 +19,11 @@ jobs:
           java-version: ${{ matrix.java }}
       - name:
         run: chmod +x gradlew
+      - name: Launch MongoDB
+        uses: wbari/start-mongoDB@v0.2
+        with:
+          mongoDBVersion: 4.2
       - name: Build
-        run: ./gradlew build
+        run: ./gradlew assemble
       - name: Tests
         run: ./gradlew check
