@@ -5,7 +5,7 @@ import kotlin.random.Random
 
 abstract class AbstractTest {
 
-    private val dbUrl: String by System.getenv().withDefault { "mongodb://192.168.1.158:27018" }
+    private val dbUrl: String by System.getenv().withDefault { "mongodb://192.168.1.159:27017" }
 
     protected val db = KMongo.createClient(dbUrl)
         .getDatabase("test")

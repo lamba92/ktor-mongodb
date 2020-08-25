@@ -17,10 +17,10 @@ buildscript {
 }
 
 plugins {
-    kotlin("multiplatform") version "1.3.72"
-    kotlin("plugin.serialization") version "1.3.72"
+    kotlin("multiplatform")
+    kotlin("plugin.serialization")
     `maven-publish`
-    id("com.jfrog.bintray") version "1.8.5"
+    id("com.jfrog.bintray")
 }
 
 group = "com.github.lamba92"
@@ -29,7 +29,6 @@ version = TRAVIS_TAG ?: "0.0.1"
 repositories {
     mavenLocal()
     jcenter()
-    maven("https://kotlin.bintray.com/ktor")
 }
 
 kotlin {
@@ -45,6 +44,8 @@ kotlin {
     sourceSets {
 
         val ktorVersion: String by project
+        val kmongoVersion: String by project
+        val jupyterVersion: String by project
 
         val jvmMain by getting {
             dependencies {
@@ -53,7 +54,7 @@ kotlin {
 
                 implementation(ktor("server-core", ktorVersion))
                 implementation(ktor("auth", ktorVersion))
-                implementation("org.litote.kmongo", "kmongo-coroutine-serialization", "4.0.3")
+                implementation("org.litote.kmongo", "kmongo-coroutine-serialization", kmongoVersion)
             }
         }
         val jvmTest by getting {
@@ -61,7 +62,7 @@ kotlin {
                 implementation(ktor("server-tests", ktorVersion))
                 implementation(ktor("serialization", ktorVersion))
                 implementation(kotlin("test-junit5"))
-                implementation("org.junit.jupiter", "junit-jupiter-engine", "5.5.2")
+                implementation("org.junit.jupiter", "junit-jupiter-engine", jupyterVersion)
             }
         }
     }

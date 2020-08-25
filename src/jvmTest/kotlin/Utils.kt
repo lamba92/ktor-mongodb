@@ -4,7 +4,6 @@ import io.ktor.util.*
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonConfiguration
 
 fun TestApplicationRequest.setContentType(contentType: ContentType) =
     addHeader(HttpHeaders.ContentType, contentType.toString())
@@ -13,7 +12,7 @@ fun TestApplicationRequest.setContentType(contentType: ContentType) =
 fun TestApplicationRequest.addBasicAuth(user: String = "mario", pass: String = "super") =
     addHeader(HttpHeaders.Authorization, "Basic " + "$user:$pass".encodeBase64())
 
-val serializer by lazy { Json(JsonConfiguration.Stable) }
+val serializer by lazy { Json { allowStructuredMapKeys = true } }
 
 fun TestApplicationEngine.handleRequest(
     method: HttpMethod,
@@ -28,13 +27,13 @@ fun TestApplicationEngine.handleRequest(
 }.apply(action)
 
 fun String.asTestData() =
-    serializer.parse(TestData.serializer(), this)
+    serializer.decodeFromString(TestData.serializer(), this)
 
 fun String.asTestDataList() =
-    serializer.parse(ListSerializer(TestData.serializer()), this)
+    serializer.decodeFromString(ListSerializer(TestData.serializer()), this)
 
 fun List<TestData>.toJson() =
-    serializer.stringify(ListSerializer(TestData.serializer()), this)
+    serializer.encodeToString(ListSerializer(TestData.serializer()), this)
 
 fun List<TestData>.asIdsJson() =
-    map { it._id }.let { serializer.stringify(ListSerializer(String.serializer()), it) }
+    map { it._id }.let { serializer.encodeToString(ListSerializer(String.serializer()), it) }
