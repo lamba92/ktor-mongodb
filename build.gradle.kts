@@ -47,7 +47,7 @@ kotlin {
         val kmongoVersion: String by project
         val jupyterVersion: String by project
 
-        val jvmMain by getting {
+        named("jvmMain") {
             dependencies {
 
                 implementation(kotlin("stdlib-jdk8"))
@@ -57,7 +57,7 @@ kotlin {
                 implementation("org.litote.kmongo", "kmongo-coroutine-serialization", kmongoVersion)
             }
         }
-        val jvmTest by getting {
+        named("jvmTest") {
             dependencies {
                 implementation(ktor("server-tests", ktorVersion))
                 implementation(ktor("serialization", ktorVersion))
